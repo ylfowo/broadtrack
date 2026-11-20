@@ -1,0 +1,5 @@
+.git
+.gitattributes
+images
+build
+*.json

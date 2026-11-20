@@ -1,0 +1,13 @@
+# 数据目录（帧序列与处理输出）
+input/
+input_1080/
+output/
+
+# Python
+__pycache__/
+
+# Claude 本地配置
+.claude/
+
+# 模型权重（488MB，LFS 对象，单独管理）
+models/
