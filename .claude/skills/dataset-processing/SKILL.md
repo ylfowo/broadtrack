@@ -5,10 +5,24 @@ description: 足球比赛数据集批量标定标准流程（盘点→tripod估�
 
 # 数据集批量处理标准流程
 
-BroadTrack 相机参数逆解的固定流水线，全部步骤已有脚本，按序执行即可。
-脚本均在 `scripts/` 下，Python 用 `C:\Users\84261\.conda\envs\soccer\python.exe`。
+BroadTrack 相机参数逆解的固定流水线，全部步骤已有脚本。
 
-## 流程（5 步）
+## 快速入口（首选）：一站式流水线
+
+```
+python scripts/run_pipeline.py                 # 全部 input/ 序列，一条命令跑完
+python scripts/run_pipeline.py <seq>           # 单个序列
+python scripts/run_pipeline.py --path <dir> [--name <n>]   # 任意位置序列
+python scripts/run_pipeline.py --dry-run       # 只看计划不执行
+python scripts/run_pipeline.py --no-tripod     # 跳过 tripod 估计
+```
+
+内部执行 5 步：盘点 → tripod 估计（已有跳过）→ 全量逆解（内部 3 并发）→ 清洗重试 → 汇总。
+每步断点续跑：**中途任意时刻中断，重跑同一条命令即续跑**（已完成的段自动跳过）。
+tripod 估计后自动校验（缺失则中止并报告）。
+建议后台运行：一条命令挂后台，完成后人工抽查 montage 即可。
+
+## 分步执行（调试/重跑单步用）
 
 ### 1. 盘点（只读）
 ```

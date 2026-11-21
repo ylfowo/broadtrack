@@ -110,7 +110,7 @@ def main():
         seqs = {name: frames_dir}
         names = [name]
     elif args and not args[0].startswith("--"):
-        names = [args[0]]
+        names = [a for a in args if not a.startswith("--")]
     else:
         names = sorted(seqs)
     for name in names:

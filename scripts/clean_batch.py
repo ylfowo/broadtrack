@@ -67,7 +67,7 @@ def main():
     retry = "--retry" in args
     seqs = processed_sequences()
     if args and not args[0].startswith("--"):
-        seqs = [args[0]]
+        seqs = [a for a in args if not a.startswith("--")]
     if not seqs:
         print("output/ds/ 下没有 batch_log.csv", flush=True)
         return
