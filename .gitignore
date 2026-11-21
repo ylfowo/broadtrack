@@ -7,7 +7,7 @@ output/
 __pycache__/
 
 # Claude 本地配置（skill 除外，随仓库版本化）
-.claude/
+.claude/*
 !.claude/skills/
 
 # 模型权重（488MB，LFS 对象，单独管理）
