@@ -7,9 +7,13 @@ from collections import Counter
 import numpy as np
 
 OUT = r"C:\Users\84261\Desktop\BroadTrack\output\ds"
-SEQS = ["manu_whu_1", "manu_whu_2", "liv_cry_1", "liv_cry_2",
-        "stoke_manu_1", "stoke_manu_2", "burnley_cry_1", "burnley_cry_2",
-        "cry_sou_1", "cry_sou_2", "manc_cry_1", "manc_cry_2", "westham_2"]
+# 自动扫描 output/ds/ 下含 batch_log.csv 的序列（新数据集无需登记）
+def _discover():
+    return sorted(d for d in os.listdir(OUT)
+                  if os.path.isfile(os.path.join(OUT, d, "batch_log.csv")))
+
+
+SEQS = _discover()
 MATCH = {
     "manu_whu_1": "2017-08-13 ManUtd vs WestHam",
     "manu_whu_2": "2017-08-13 ManUtd vs WestHam",
@@ -50,8 +54,6 @@ for s in SEQS:
                     fl += 1
                     if r["score_mean"]:
                         fl_scores.append(float(r["score_mean"]))
-                        scores.append(float(r["score_mean"]))
-                        devs.append(float(r["dev_m"]))
                 else:
                     er += 1
                     er_segs.append(r["seg"])
@@ -66,7 +68,7 @@ for s in SEQS:
             consensus = np.mean(pos, axis=0)
             consensus_std = np.std(pos, axis=0)
     rows.append(dict(
-        seq=s, match=MATCH[s], ok=ok, flagged=fl, error=er, total=ok + fl + er,
+        seq=s, match=MATCH.get(s, s), ok=ok, flagged=fl, error=er, total=ok + fl + er,
         score_mean=round(float(np.mean(scores)), 3) if scores else None,
         score_min=round(float(min(scores)), 3) if scores else None,
         fl_mean=round(float(np.mean(fl_scores)), 3) if fl_scores else None,
@@ -77,7 +79,7 @@ for s in SEQS:
     ))
 
 lines = []
-lines.append("# input/ 4 场新数据集处理总结（2026-11-13）")
+lines.append("# 数据集批量处理总结（自动汇总）")
 lines.append("")
 lines.append("## 总览")
 lines.append("")

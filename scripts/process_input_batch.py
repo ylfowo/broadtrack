@@ -1,7 +1,10 @@
-"""批量处理 input/ 下 8 个 wide 序列（嵌套路径结构）。
+"""批量处理 input/ 下 wide 序列（嵌套路径结构，自动发现）。
 每段: 上采样1080p -> broadtrack(该序列tripod约束+彩色投影) -> stats+montage
 输出: output/ds/<seq>/seg_XXX/{seg_XXX.json, vis/t_*.jpg, montage.png, stats.json}
-用法: python process_input_batch.py <seq短名>   (如 manu_whu_1)
+用法:
+  python process_input_batch.py <seq短名>   单个序列（断点续跑，跳过 ok/flagged）
+  python process_input_batch.py --all       处理 input/ 下全部序列
+  python process_input_batch.py --path <frames_dir> [--name <n>]   任意位置序列
 """
 import os
 import sys
@@ -15,21 +18,7 @@ import traceback
 import cv2
 import numpy as np
 
-SEQUENCES = {
-    "manu_whu_1": r"C:\Users\84261\Desktop\BroadTrack\input\2017-08-13_manchester-united-west-ham-united-premier-league-2017-2018\manchester-united-west-ham-united-premier-league-2017-2018_1_wide\frames",
-    "manu_whu_2": r"C:\Users\84261\Desktop\BroadTrack\input\2017-08-13_manchester-united-west-ham-united-premier-league-2017-2018\manchester-united-west-ham-united-premier-league-2017-2018_2_wide\frames",
-    "liv_cry_1": r"C:\Users\84261\Desktop\BroadTrack\input\2017-08-19_liverpool-fc-crystal-palace\liverpool-fc-crystal-palace_1_wide\frames",
-    "liv_cry_2": r"C:\Users\84261\Desktop\BroadTrack\input\2017-08-19_liverpool-fc-crystal-palace\liverpool-fc-crystal-palace_2_wide\frames",
-    "stoke_manu_1": r"C:\Users\84261\Desktop\BroadTrack\input\2017-09-09_stoke-city-manchester-united-premier-league\stoke-city-manchester-united-premier-league_1_wide\frames",
-    "stoke_manu_2": r"C:\Users\84261\Desktop\BroadTrack\input\2017-09-09_stoke-city-manchester-united-premier-league\stoke-city-manchester-united-premier-league_2_wide\frames",
-    "burnley_cry_1": r"C:\Users\84261\Desktop\BroadTrack\input\2017-09-10_burnley-fc-crystal-palace\burnley-fc-crystal-palace_1_wide\frames",
-    "burnley_cry_2": r"C:\Users\84261\Desktop\BroadTrack\input\2017-09-10_burnley-fc-crystal-palace\burnley-fc-crystal-palace_2_wide\frames",
-    "cry_sou_1": r"C:\Users\84261\Desktop\BroadTrack\input\2017-09-16_crystal-palace-southampton-fc\crystal-palace-southampton-fc_1_wide\frames",
-    "cry_sou_2": r"C:\Users\84261\Desktop\BroadTrack\input\2017-09-16_crystal-palace-southampton-fc\crystal-palace-southampton-fc_2_wide\frames",
-    "manc_cry_1": r"C:\Users\84261\Desktop\BroadTrack\input\2017-09-23_manchester-city-crystal-palace-premier-league-2017-2018\manchester-city-crystal-palace-premier-league-2017-2018_1_wide\frames",
-    "manc_cry_2": r"C:\Users\84261\Desktop\BroadTrack\input\2017-09-23_manchester-city-crystal-palace-premier-league-2017-2018\manchester-city-crystal-palace-premier-league-2017-2018_2_wide\frames",
-    "westham_2": r"C:\Users\84261\Desktop\BroadTrack\input\2017-09-23_west-ham-united-tottenham-hotspur\west-ham-united-tottenham-hotspur_2_wide\west-ham-united-tottenham-hotspur_2_wide\frames",
-}
+from ds_common import discover
 
 OUT_ROOT = r"C:\Users\84261\Desktop\BroadTrack\output"
 PREP_ROOT = r"C:\Users\84261\Desktop\BroadTrack\input_1080\ds_input"
@@ -142,14 +131,12 @@ def make_stats_and_montage(name, seg):
     return stats
 
 
-def main():
-    name = sys.argv[1]
-    frames_dir = SEQUENCES[name]
+def process_one(name, frames_dir):
     outbase = os.path.join(OUT_ROOT, "ds", name)
     os.makedirs(outbase, exist_ok=True)
     if tripod_center(name) is None:
         print(f"[{name}] tripod file missing: {TRIPOD_DIR}\\{name}_tripod.json", flush=True)
-        sys.exit(1)
+        return
     segs = sorted(s for s in os.listdir(frames_dir) if os.path.isdir(os.path.join(frames_dir, s)))
     print(f"[{name}] total segs: {len(segs)}", flush=True)
 
@@ -207,6 +194,33 @@ def main():
             f.flush()
 
     print(f"[{name}] ALL DONE", flush=True)
+
+
+def main():
+    args = sys.argv[1:]
+    seqs = discover()
+    if "--path" in args:
+        i = args.index("--path")
+        frames_dir = args[i + 1]
+        name = None
+        if "--name" in args:
+            name = args[args.index("--name") + 1]
+        if name is None:
+            name = os.path.basename(os.path.normpath(frames_dir))
+        seqs = {name: frames_dir}
+        names = [name]
+    elif "--all" in args:
+        names = sorted(seqs)
+    elif args:
+        names = [args[0]]
+    else:
+        print(__doc__)
+        return
+    for name in names:
+        if name not in seqs:
+            print(f"[{name}] unknown sequence (run ds_common.py --list)", flush=True)
+            continue
+        process_one(name, seqs[name])
 
 
 if __name__ == "__main__":
