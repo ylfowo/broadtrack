@@ -65,8 +65,27 @@ def run_batch(names):
                 print(f"[{n}] worker exception: {e}", flush=True)
 
 
+def docker_ready():
+    """预检 docker：未安装/不在 PATH/守护进程未启动时给出明确提示。"""
+    try:
+        r = subprocess.run(["docker", "info"], capture_output=True, text=True, timeout=60)
+        if r.returncode == 0:
+            return True
+        msg = r.stderr.strip().splitlines()
+        if "daemon" in " ".join(msg).lower() or "pipe" in " ".join(msg).lower():
+            print("!! Docker Desktop 未启动：请先打开 Docker Desktop（等鲸鱼图标变绿）再运行", flush=True)
+        else:
+            print(f"!! docker 不可用: {' '.join(msg[:3])}", flush=True)
+        return False
+    except FileNotFoundError:
+        print("!! 找不到 docker 命令：确认 Docker Desktop 已安装且 PATH 含其 bin 目录", flush=True)
+        return False
+
+
 def main():
     args = sys.argv[1:]
+    if "--dry-run" not in args and not docker_ready():
+        return
     seqs = discover()
     if "--path" in args:
         i = args.index("--path")
