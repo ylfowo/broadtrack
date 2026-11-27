@@ -10,5 +10,3 @@ __pycache__/
 .claude/*
 !.claude/skills/
 
-# 模型权重（488MB，LFS 对象，单独管理）
-models/
